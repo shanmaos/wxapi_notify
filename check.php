@@ -172,6 +172,32 @@ function getGroupNotifyUrl($conn, $groupId) {
 }
 
 /**
+ * 获取分组名称
+ */
+function getGroupName($conn, $groupId) {
+    if ($groupId <= 0) {
+        return '';
+    }
+    
+    $sql = "SELECT name FROM domain_groups WHERE id = ? LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $groupId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $groupName = '';
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $groupName = $row['name'];
+    }
+    
+    $result->free();
+    $stmt->close();
+    
+    return $groupName;
+}
+
+/**
  * 获取系统配置的通知API URL
  */
 function getSystemNotifyUrl($conn) {
@@ -191,12 +217,18 @@ function getSystemNotifyUrl($conn) {
 /**
  * 发送通知
  */
-function sendNotification($notifyUrl, $domain, $statusText) {
+function sendNotification($notifyUrl, $domain, $statusText, $groupName = '') {
     if (empty($notifyUrl)) {
         return false;
     }
     
-    $message = $domain . $statusText;
+    // 构造消息内容：如果有分组名称则包含在消息中
+    if (!empty($groupName)) {
+        $message = $groupName . " - " . $domain . " - " . $statusText;
+    } else {
+        $message = $domain . " - " . $statusText;
+    }
+    
     $url = $notifyUrl . "?msg=" .$message;
     
     $ch = curl_init();
@@ -337,7 +369,9 @@ function handleStatusNotification($conn, $domainId, $domainName, $groupId, $newS
     
     // 发送通知
     echo "    发送通知 ({$statusText})... ";
-    $result = sendNotification($notifyUrl, $domainName, $statusText);
+    // 如果域名属于某个分组，则带上分组名称
+    $groupName = getGroupName($conn, $groupId);
+    $result = sendNotification($notifyUrl, $domainName, $statusText, $groupName);
     
     if ($result['success']) {
         // 通知成功后更新notify_status

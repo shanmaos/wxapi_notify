@@ -71,7 +71,7 @@ function getDefaultConfig() {
         'notify_url' => '',
         'global_notify_url' => '',
         'created_at' => null,
-        'updated_at' => null
+        'update_time' => null
     ];
 }
 
@@ -491,7 +491,7 @@ function actionUpdateGroup() {
         jsonResponse(false, null, '没有要更新的字段');
     }
     
-    $updates[] = "updated_at = ?";
+    $updates[] = "update_time = ?";
     $types .= 's';
     $values[] = date('Y-m-d H:i:s');
     

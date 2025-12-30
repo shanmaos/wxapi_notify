@@ -91,7 +91,7 @@ function getDefaultConfig() {
         'notify_url' => '',
         'global_notify_url' => '',
         'created_at' => null,
-        'updated_at' => null
+        'update_time' => null
     ];
 }
 

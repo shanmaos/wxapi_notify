@@ -306,6 +306,67 @@ function actionUpdate() {
     }
 }
 
+// 更新域名状态
+function actionUpdateStatus() {
+    // 支持JSON格式和表单格式的输入
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+    
+    // 如果JSON解析失败或为空，尝试从$_POST获取
+    if (empty($data)) {
+        $data = $_POST;
+    }
+    
+    if (!isset($data['id'])) {
+        jsonResponse(false, null, '无效的域名ID');
+    }
+    
+    $id = (int)$data['id'];
+    
+    if ($id <= 0) {
+        jsonResponse(false, null, '无效的域名ID');
+    }
+    
+    if (!isset($data['status']) || !in_array((int)$data['status'], [1, 2, 3, 4])) {
+        jsonResponse(false, null, '无效的状态值');
+    }
+    
+    $status = (int)$data['status'];
+    $conn = getDbConnection();
+    
+    // 检查域名是否存在
+    $checkSql = "SELECT id FROM domainlist WHERE id = ?";
+    $stmt = $conn->prepare($checkSql);
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        $conn->close();
+        jsonResponse(false, null, '域名不存在');
+    }
+    $stmt->close();
+    
+    // 更新状态
+    $updateSql = "UPDATE domainlist SET status = ?, update_time = ? WHERE id = ?";
+    $stmt = $conn->prepare($updateSql);
+    $now = date('Y-m-d H:i:s');
+    $stmt->bind_param('isi', $status, $now, $id);
+    
+    if ($stmt->execute()) {
+        $stmt->close();
+        $conn->close();
+        
+        $statusText = getStatusText($status);
+        jsonResponse(true, ['status' => $status, 'statusText' => $statusText], '状态更新成功');
+    } else {
+        $stmt->close();
+        $conn->close();
+        jsonResponse(false, null, '状态更新失败: ' . $conn->error);
+    }
+}
+
 // 删除域名
 function actionDelete() {
     // 支持JSON格式和表单格式的输入
@@ -732,6 +793,10 @@ switch ($action) {
     
     case 'update':
         actionUpdate();
+        break;
+    
+    case 'update_status':
+        actionUpdateStatus();
         break;
     
     case 'delete':

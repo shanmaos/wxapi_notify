@@ -229,8 +229,8 @@ function sendNotification($notifyUrl, $domain, $statusText, $groupName = '') {
         $message = $domain . " - " . $statusText;
     }
     
-    $url = $notifyUrl . "?msg=" .$message;
-    
+    $url = $notifyUrl . "?msg=" . urlencode($message);
+    //echo $url . "\n";
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL => $url,

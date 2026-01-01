@@ -354,8 +354,9 @@ function handleStatusNotification($conn, $domainId, $domainName, $groupId, $newS
         if (!empty($notifyUrl)) {
             // 分组有notify_url，使用它
         } else {
+            $notifyUrl = getSystemNotifyUrl($conn);
             // 分组没有notify_url，不使用系统URL（已分组的域名不使用系统通知）
-            $notifyUrl = null;
+            //$notifyUrl = null;
         }
     } else {
         // 未分组的域名，使用系统通知URL

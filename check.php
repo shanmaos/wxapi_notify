@@ -230,27 +230,50 @@ function sendNotification($notifyUrl, $domain, $statusText, $groupName = '') {
     }
     
     $url = $notifyUrl . "?msg=" . urlencode($message);
-    //echo $url . "\n";
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false
-    ]);
+    $maxRetries = 3;
+    $retryCount = 0;
+    $success = false;
+    $result = [];
     
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
-    
-    if ($error) {
-        return ['success' => false, 'error' => $error];
+    while ($retryCount < $maxRetries && !$success) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($error) {
+            $result = ['success' => false, 'error' => $error];
+        } else {
+            // 解析JSON响应
+            $jsonResponse = json_decode($response, true);
+            // 检查是否解析成功并且code=1
+            if (json_last_error() === JSON_ERROR_NONE && isset($jsonResponse['code']) && $jsonResponse['code'] === 1) {
+                $success = true;
+                $result = ['success' => true, 'http_code' => $httpCode, 'response' => $response];
+            } else {
+                $result = ['success' => false, 'http_code' => $httpCode, 'response' => $response, 'json_error' => json_last_error_msg()];
+            }
+        }
+        
+        $retryCount++;
+        
+        // 如果没有成功且还有重试机会，添加延迟
+        if (!$success && $retryCount < $maxRetries) {
+            sleep(1); // 延迟1秒后重试
+        }
     }
     
-    return ['success' => true, 'http_code' => $httpCode, 'response' => $response];
+    return $result;
 }
 
 /**

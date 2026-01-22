@@ -183,7 +183,7 @@ try {
     
     // 执行SQL文件
     echo "步骤3: 创建数据表...\n";
-    $sqlFile = __DIR__ . '/database_schema.sql';
+    $sqlFile = __DIR__ . '/sql57.sql';
     if (file_exists($sqlFile)) {
         echo "SQL文件路径: " . $sqlFile . "\n";
         if (executeSqlFile($conn, $sqlFile)) {

@@ -28,7 +28,11 @@ function getDomainList($page = 1, $perPage = 10, $status = '', $groupId = '') {
     $where = "1=1";
     if (!empty($status) && $status !== 'all') {
         $status = (int)$status;
-        $where .= " AND d.status = $status";
+        if($status>=5){
+            $where .= " AND d.notify_status = $status";
+        }else{
+            $where .= " AND d.status = $status";
+        }
     }
     if (!empty($groupId) && $groupId !== 'all') {
         $groupId = (int)$groupId;
@@ -134,6 +138,13 @@ function getStats() {
         $result->free();
     }
     
+    // 其他异常（状态5-9）
+    $result = $conn->query("SELECT COUNT(*) as count FROM domainlist WHERE status IN (5, 6, 7, 8, 9)");
+    if ($result) {
+        $stats['other_exceptions'] = $result->fetch_assoc()['count'];
+        $result->free();
+    }
+    
     $conn->close();
     return $stats;
 }
@@ -228,6 +239,10 @@ $groups = getGroupList();
                     <div style="font-size: 28px; font-weight: bold; color: #95a5a6;"><?php echo $stats['blocked_white']; ?></div>
                     <div style="color: #666; font-size: 14px;">白色被封</div>
                 </div>
+                <div class="stat-card" style="background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 120px; text-align: center;">
+                    <div style="font-size: 28px; font-weight: bold; color: #f39c12;"><?php echo $stats['other_exceptions']; ?></div>
+                    <div style="color: #666; font-size: 14px;">其他异常</div>
+                </div>
             </div>
         </div>
 
@@ -247,6 +262,11 @@ $groups = getGroupList();
                         <option value="2">红色被封</option>
                         <option value="3">蓝色异常</option>
                         <option value="4">白色被封</option>
+                        <option value="5">无法打开</option>
+                        <option value="6">掉备案</option>
+                        <option value="7">404</option>
+                        <option value="8">4xx</option>
+                        <option value="9">5xx</option>
                     </select>
                     
                     <select id="filter-group" class="form-control" style="width: 150px;" onchange="applyFilters()">
@@ -376,6 +396,11 @@ $groups = getGroupList();
                         <option value="2">红色被封</option>
                         <option value="3">蓝色异常</option>
                         <option value="4">白色被封</option>
+                        <option value="5">无法打开</option>
+                        <option value="6">掉备案</option>
+                        <option value="7">404</option>
+                        <option value="8">4xx</option>
+                        <option value="9">5xx</option>
                     </select>
                 </div>
                 <div style="text-align: right; margin-top: 20px;">
@@ -551,9 +576,9 @@ $groups = getGroupList();
             html = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #666;">没有符合条件的域名</td></tr>';
         } else {
             domains.forEach(function(domain) {
-                let statusClass = ['status-normal','status-normal', 'status-red', 'status-blue',  'status-white'][domain.status] || 'status-normal';
-                let statusText = ['未知', '正常', '红色被封', '蓝色异常', '白色被封'][domain.status] || '正常';
-                let notifyText = ['未通知', '正常', '红色被封', '蓝色异常', '白色被封'][domain.notify_status] || '未通知';
+                let statusClass = ['status-normal','status-normal', 'status-red', 'status-blue', 'status-white', 'status-orange', 'status-yellow', 'status-purple', 'status-gray', 'status-dark'][domain.status] || 'status-normal';
+                let statusText = ['未知', '正常', '红色被封', '蓝色异常', '白色被封', '无法打开', '掉备案', '404', '4xx', '5xx'][domain.status] || '正常';
+                let notifyText = ['未通知', '正常', '红色被封', '蓝色异常', '白色被封', '无法打开', '掉备案', '404', '4xx', '5xx'][domain.notify_status] || '未通知';
                 
                 html += '<tr data-id="' + domain.id + '">' +
                     '<td><input type="checkbox" class="domain-checkbox" value="' + domain.id + '" onchange="updateBatchButtons()"></td>' +

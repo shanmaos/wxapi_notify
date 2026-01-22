@@ -106,6 +106,50 @@ $groups = getGroupList();
     <title>系统配置 - 域名监控系统</title>
     <link rel="stylesheet" href="assets/style.css">
     <script src="jquery-1.7.2.min.js"></script>
+    <style>
+        /* 美化复选框组 */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background-color: #f5f7fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-size: 14px;
+        }
+        
+        .checkbox-label:hover {
+            background-color: #e4ecfa;
+            border-color: #3498db;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        
+        /* 选中状态的样式 */
+        .checkbox-label input[type="checkbox"]:checked {
+            accent-color: #27ae60;
+        }
+        
+        /* 选中时的文本样式 */
+        .checkbox-label:has(input[type="checkbox"]:checked) {
+            background-color: #e8f5e9;
+            border-color: #27ae60;
+            font-weight: bold;
+            color: #27ae60;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -175,17 +219,42 @@ $groups = getGroupList();
                             <label class="checkbox-label">
                                 <input type="checkbox" name="notifyTypes" value="2" 
                                        <?php echo in_array(2, $notifyTypes) ? 'checked' : ''; ?>>
-                                红色被封通知
+                                微信红色被封通知
                             </label>
                             <label class="checkbox-label">
                                 <input type="checkbox" name="notifyTypes" value="3" 
                                        <?php echo in_array(3, $notifyTypes) ? 'checked' : ''; ?>>
-                                蓝色异常通知
+                                微信蓝色异常通知
                             </label>
                             <label class="checkbox-label">
                                 <input type="checkbox" name="notifyTypes" value="4" 
                                        <?php echo in_array(4, $notifyTypes) ? 'checked' : ''; ?>>
-                                白色被封通知
+                                微信白色被封通知
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notifyTypes" value="5" 
+                                       <?php echo in_array(5, $notifyTypes) ? 'checked' : ''; ?>>
+                                无法打开通知
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notifyTypes" value="6" 
+                                       <?php echo in_array(6, $notifyTypes) ? 'checked' : ''; ?>>
+                                掉备案通知
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notifyTypes" value="7" 
+                                       <?php echo in_array(7, $notifyTypes) ? 'checked' : ''; ?>>
+                                404通知
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notifyTypes" value="8" 
+                                       <?php echo in_array(8, $notifyTypes) ? 'checked' : ''; ?>>
+                                4xx通知
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notifyTypes" value="9" 
+                                       <?php echo in_array(9, $notifyTypes) ? 'checked' : ''; ?>>
+                                5xx通知
                             </label>
                         </div>
                         <small>选择需要发送通知的状态变化类型</small>

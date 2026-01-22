@@ -48,7 +48,11 @@ function actionList() {
     }
     if ($status !== '' && $status !== 'all') {
         $status = (int)$status;
-        $where .= " AND d.status = $status";
+        if($status>=5){
+            $where .= " AND d.notify_status = $status";
+        }else{
+            $where .= " AND d.status = $status";
+        }
     }
     if ($groupId !== '' && $groupId !== 'all') {
         $groupId = (int)$groupId;

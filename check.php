@@ -56,7 +56,7 @@ function getSystemConfig($conn) {
  * 获取需要检测的域名列表（按update_time升序排列）
  */
 function getDomainsToCheck($conn) {
-    $sql = "SELECT id, domain, status, group_id FROM domainlist WHERE status IN (0, 1, 3) ORDER BY update_time ASC";
+    $sql = "SELECT id, domain, status, group_id FROM domainlist WHERE status IN (0, 1, 3,5,6,7,8,9) ORDER BY update_time ASC";
     $result = $conn->query($sql);
     
     $domains = [];
@@ -98,6 +98,55 @@ function checkDomainStatus($apiUrl, $domain) {
     }
     
     $data = json_decode($response, true);
+    
+    // 新增：检查域名本身的网页内容
+    $domainUrl = $domain;
+    if (!preg_match('/^https?:\/\//i', $domainUrl)) {
+        $domainUrl = 'http://' . $domainUrl;
+    }
+    
+    $domainCh = curl_init();
+    curl_setopt_array($domainCh, [
+        CURLOPT_URL => $domainUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+    ]);
+    
+    $domainContent = curl_exec($domainCh);
+    $domainHttpCode = curl_getinfo($domainCh, CURLINFO_HTTP_CODE);
+    $domainError = curl_error($domainCh);
+    curl_close($domainCh);
+    
+    // 打印HTTP状态码
+    echo "域名访问HTTP状态码: {$domainHttpCode}\n";
+    if($domain=='hlma.jvslyf.cn')
+    //var_dump($domainContent);
+    // 根据HTTP状态码和内容设置相应的状态值
+    if ($domainHttpCode == 0) {
+        // 无法打开通知（httpcode=0）
+        $data['status'] = 5;
+        $data['info'] = '无法打开域名';
+    } elseif (strpos($domainContent, '您未进行备案') !== false || strpos($domainContent, '当前备案状态不符合') !== false || strpos($domainContent, 'Non-compliance ICP') !== false) {
+        // 掉备案通知
+        $data['status'] = 6;
+        $data['info'] = '域名未备案';
+    } elseif ($domainHttpCode == 404) {
+        // 404通知
+        $data['status'] = 7;
+        $data['info'] = '页面不存在（404）';
+    } elseif ($domainHttpCode >= 400 && $domainHttpCode < 500) {
+        // 4xx通知（除了404）
+        $data['status'] = 8;
+        $data['info'] = '客户端错误（' . $domainHttpCode . '）';
+    } elseif ($domainHttpCode >= 500 && $domainHttpCode < 600) {
+        // 5xx通知
+        $data['status'] = 9;
+        $data['info'] = '服务器错误（' . $domainHttpCode . '）';
+    }
     
     return [
         'success' => true,
@@ -345,8 +394,8 @@ function getNotifyTypes($conn) {
  * 处理域名状态变更通知
  */
 function handleStatusNotification($conn, $domainId, $domainName, $groupId, $newStatus, $statusText) {
-    // 只处理状态2、3、4的通知
-    if (!in_array($newStatus, [2, 3, 4])) {
+    // 只处理状态2-9的通知
+    if (!in_array($newStatus, [2, 3, 4, 5, 6, 7, 8, 9])) {
         return;
     }
     
@@ -471,14 +520,29 @@ function main() {
                             $statusText = '蓝色异常';
                             break;
                         case 4:
-                            $statusText = '白色被封';
+                            $statusText = '白色-'.$data['info'];
+                            break;
+                        case 5:
+                            $statusText = '无法打开';
+                            break;
+                        case 6:
+                            $statusText = '掉备案';
+                            break;
+                        case 7:
+                            $statusText = '404通知';
+                            break;
+                        case 8:
+                            $statusText = '4xx通知';
+                            break;
+                        case 9:
+                            $statusText = '5xx通知';
                             break;
                         default:
                             $statusText = '未知状态(' . $newStatus . ')';
                             break;
                     }
                     
-                    echo "HTTP {$httpCode}, 新状态: {$statusText}\n";
+                    echo "接口 HTTP {$httpCode}, 新状态: {$statusText}\n";
                     
                     // 更新数据库中的状态和检测时间
                     if ($newStatus > 0) {
